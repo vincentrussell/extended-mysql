@@ -33,23 +33,13 @@ do
     fi
 done < <(env)
 
-#https://github.com/gritt/docker-mysql-replication/tree/topology/master-master/docker/database/config
-create_replication_user () {
-  sleep 10
-  echo "creating replication user $1"
-  mysql --host localhost -uroot -p$MYSQL_ROOT_PASSWORD -AN -e "CREATE USER '$1'@'%' IDENTIFIED BY '$MYSQL_REPLICATION_PASSWORD';"
-  mysql --host localhost -uroot -p$MYSQL_ROOT_PASSWORD -AN -e "GRANT REPLICATION SLAVE ON *.* TO '$1'@'%';"
-  mysql --host localhost -uroot -p$MYSQL_ROOT_PASSWORD -AN -e "FLUSH PRIVILEGES;"
-}
-
-
 echo "using the following config"
 cat $CONF_FILE
 
-if [ -n "$MYSQL_REPLICATION_USER" ]; then
-    echo "going to create replication user"
-   create_replication_user $MYSQL_REPLICATION_USER &
+if [ "$MODE" == "setup_duplication" ]; then
+    exec /usr/local/bin/setup-bidirectional-duplication.sh "$@"
+    exit 0
+else   
+    exec /usr/local/bin/docker-entrypoint.sh "$@"
 fi
-
-exec /usr/local/bin/docker-entrypoint.sh "$@"
 
